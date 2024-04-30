@@ -2,7 +2,6 @@ package com.example.weatherapp;
 
 import com.example.weatherapp.city.CityService;
 import jakarta.annotation.PostConstruct;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -26,6 +25,7 @@ public class InitialForecastLoader {
     @PostConstruct
     public void loadForecast() {
         loadSqlData();
+        loadSqlData();
         cityService.updateAllForecasts();
     }
 
@@ -41,6 +41,8 @@ public class InitialForecastLoader {
             }
         } catch (IOException e) {
             System.err.println(e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
         }
     }
 

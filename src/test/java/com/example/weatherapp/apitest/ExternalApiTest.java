@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
@@ -23,6 +24,12 @@ public class ExternalApiTest extends MySQLContainerConfig {
 
     @LocalServerPort
     private int port;
+
+//    @Value("${external.api.key}")
+//    private String apiKeyOpenweather;
+//
+//    @Value("${api.url}")
+//    private String apiUrl;
 
 //    private final CityService cityService;
 //
