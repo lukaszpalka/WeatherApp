@@ -14,12 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -33,6 +32,8 @@ public class ApiCallTest extends MySQLContainerConfig {
 
     @LocalServerPort
     private int port;
+
+    private final TestRestTemplate restTemplate = new TestRestTemplate();
 
     private final String apiKeyOpenweather;
     private final String apiUrl;
@@ -50,8 +51,6 @@ public class ApiCallTest extends MySQLContainerConfig {
     public void canUpdateDailyForecast() {
         Long id = 1L;
         City city = cityRepository.findById(id).get();
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
         stubFor(get(urlEqualTo(apiUrl + "/onecall"))
                 .withQueryParam("lat", equalTo(city.getLatitude().toString()))
@@ -74,8 +73,6 @@ public class ApiCallTest extends MySQLContainerConfig {
     public void canUpdateHourlyForecast() {
         Long id = 1L;
         City city = cityRepository.findById(id).get();
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
         stubFor(get(urlEqualTo(apiUrl + "/onecall"))
                 .withQueryParam("lat", equalTo(city.getLatitude().toString()))
@@ -107,9 +104,6 @@ public class ApiCallTest extends MySQLContainerConfig {
                         dailyForecast.getDateTime().toString()))
                 .toList();
 
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-
         ResponseEntity<List<DailyForecastDto>> response = restTemplate.exchange(
                 "http://localhost:" + port + "/forecast/" + id + "/daily",
                 HttpMethod.GET,
@@ -133,9 +127,6 @@ public class ApiCallTest extends MySQLContainerConfig {
                         hourlyForecast.getWindSpeed(),
                         hourlyForecast.getDateTime().toString()))
                 .toList();
-
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
         ResponseEntity<List<HourlyForecastDto>> response = restTemplate.exchange(
                 "http://localhost:" + port + "/forecast/" + id + "/hourly",
