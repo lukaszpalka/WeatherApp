@@ -25,11 +25,14 @@ public class InitialForecastLoader {
     @PostConstruct
     public void loadForecast() {
         loadSqlData();
-        loadSqlData();
         cityService.updateAllForecasts();
     }
 
     private void loadSqlData() {
+        if (cityService.dbExists()) {
+            return;
+        }
+
         try {
             ClassPathResource resource = new ClassPathResource("data.sql");
             BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()));

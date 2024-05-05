@@ -15,12 +15,12 @@ public class ForecastScheduler {
 
     @Scheduled(cron = "0 0 * ? * *")
     public void loadHourlyForecast() {
-        cityService.getCityDtos().forEach(cityService::getHourlyForecastsFromAPI);
+        cityService.getCityDtos().forEach(cityService::updateHourlyForecasts);
     }
 
-    @Scheduled(cron = "45 46 19 ? * *")
+    @Scheduled(cron = "0 0 0 ? * *")
     public void loadDailyForecast() {
-        cityService.getCityDtos().forEach(cityService::getDailyForecastsFromAPI);
+        cityService.getCityDtos().forEach(cityService::updateDailyForecasts);
     }
 
 }

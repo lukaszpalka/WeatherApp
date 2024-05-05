@@ -2,6 +2,7 @@ package com.example.weatherapp.config;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -11,9 +12,9 @@ public class MySQLContainerConfig implements AfterAllCallback {
 
     @Container
     protected static final MySQLContainer<?> mysqlContainer = new MySQLContainer<>("mysql:8.0.28")
-            .withDatabaseName("weatherapp")
-            .withUsername("root")
-            .withPassword("root");
+            .withDatabaseName(System.getenv("DATABASE_NAME"))
+            .withUsername(System.getenv("DATABASE_USERNAME"))
+            .withPassword(System.getenv("DATABASE_PASSWORD"));
 
     static {
         mysqlContainer.start();

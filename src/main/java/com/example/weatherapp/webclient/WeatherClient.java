@@ -18,15 +18,28 @@ public class WeatherClient {
     }
 
     public WeatherResponse getWeatherResponse(CityDto cityDto, String exclude) {
-        return webClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/onecall")
-                        .queryParam("lat", cityDto.latitude())
-                        .queryParam("lon", cityDto.longitude())
-                        .queryParam("exclude", "current,minutely," + exclude)
-                        .queryParam("appid", API_KEY_OPENWEATHER)
-                        .build())
-                .retrieve()
-                .bodyToMono(WeatherResponse.class)
-                .block();
+        if (exclude != null) {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder.path("/onecall")
+                            .queryParam("lat", cityDto.latitude())
+                            .queryParam("lon", cityDto.longitude())
+                            .queryParam("exclude", "current,minutely")
+                            .queryParam("appid", API_KEY_OPENWEATHER)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(WeatherResponse.class)
+                    .block();
+        } else {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder.path("/onecall")
+                            .queryParam("lat", cityDto.latitude())
+                            .queryParam("lon", cityDto.longitude())
+                            .queryParam("exclude", "current,minutely," + exclude)
+                            .queryParam("appid", API_KEY_OPENWEATHER)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(WeatherResponse.class)
+                    .block();
+        }
     }
 }

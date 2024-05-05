@@ -21,9 +21,9 @@ public class City {
     @Column(name = "lon")
     private Double longitude;
 
-    @OneToMany(mappedBy = "city")
+    @OneToMany(mappedBy = "cityId")
     private List<HourlyForecast> hourlyForecasts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "city")
+    @OneToMany(mappedBy = "cityId")
     private List<DailyForecast> dailyForecasts = new ArrayList<>();
 }

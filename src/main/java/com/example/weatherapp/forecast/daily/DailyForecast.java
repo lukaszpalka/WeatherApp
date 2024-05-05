@@ -1,6 +1,5 @@
 package com.example.weatherapp.forecast.daily;
 
-import com.example.weatherapp.city.City;
 import com.example.weatherapp.forecast.Forecast;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -14,9 +13,8 @@ public class DailyForecast extends Forecast {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "city_id")
-    City city;
+    @Column(name = "city_id")
+    Long cityId;
 
     @ElementCollection
     Map<String, Double> temperatures;

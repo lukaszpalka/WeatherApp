@@ -1,6 +1,5 @@
 package com.example.weatherapp.forecast.hourly;
 
-import com.example.weatherapp.city.City;
 import com.example.weatherapp.forecast.Forecast;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -12,9 +11,8 @@ public class HourlyForecast extends Forecast {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "city_id")
-    City city;
+    @Column(name = "city_id")
+    Long cityId;
 
     Double temperature;
 }

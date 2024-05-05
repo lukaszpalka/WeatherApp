@@ -1,8 +1,6 @@
 package com.example.weatherapp.city;
 
-import com.example.weatherapp.forecast.daily.DailyForecast;
 import com.example.weatherapp.forecast.daily.DailyForecastDto;
-import com.example.weatherapp.forecast.hourly.HourlyForecast;
 import com.example.weatherapp.forecast.hourly.HourlyForecastDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,36 +22,36 @@ public class CityController {
         return new ResponseEntity<>(cityService.getCityDtos(), HttpStatus.OK);
     }
 
-    @PatchMapping("/city/{id}/update")
+    @GetMapping("/city/{id}")
+    public ResponseEntity<CityDto> getCity(@PathVariable("id") Long id) {
+        return new ResponseEntity<>(cityService.getCityDtoById(id), HttpStatus.OK);
+    }
+
+    @PutMapping("/city/{id}/update")
     public ResponseEntity updateCityDetails(@PathVariable("id") Long id, @RequestBody CityDto cityDto) {
         cityService.updateCityDetailsById(id, cityDto);
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @GetMapping("/city/forecast/{id}/hourly")
+    @GetMapping("/forecast/{id}/hourly")
     public ResponseEntity<List<HourlyForecastDto>> getHourlyForecast(@PathVariable("id") Long id) {
-        return new ResponseEntity<>(cityService.getHourlyForecastsDtoById(id), HttpStatus.OK);
+        return new ResponseEntity<>(cityService.getHourlyForecastDtosById(id), HttpStatus.OK);
     }
 
-    @GetMapping("/city/forecast/{id}/daily")
+    @GetMapping("/forecast/{id}/daily")
     public ResponseEntity<List<DailyForecastDto>> getDailyForecast(@PathVariable("id") Long id) {
-        return new ResponseEntity<>(cityService.getDailyForecastsDtoById(id), HttpStatus.OK);
+        return new ResponseEntity<>(cityService.getDailyForecastDtosById(id), HttpStatus.OK);
     }
 
-    @PatchMapping("/city/forecast/update/{id}")
+    @PutMapping("/forecast/update/{id}")
     public ResponseEntity updateForecasts(@PathVariable("id") Long id) {
         cityService.updateForecastsById(id);
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @PatchMapping("/city/forecast/update/all")
+    @PutMapping("/forecast/update/all")
     public ResponseEntity updateForecasts() {
         cityService.updateAllForecasts();
         return new ResponseEntity(HttpStatus.OK);
-    }
-
-    @GetMapping("/city/coord/{id}")
-    public ResponseEntity getCityDtoById(@PathVariable("id") Long id) {
-        return new ResponseEntity(cityService.getCityDtoById(id), HttpStatus.OK);
     }
 }

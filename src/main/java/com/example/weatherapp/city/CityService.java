@@ -1,12 +1,13 @@
 package com.example.weatherapp.city;
 
 import com.example.weatherapp.exceptions.CityNotFoundException;
-import com.example.weatherapp.forecast.daily.DailyForceastRepository;
+import com.example.weatherapp.forecast.daily.DailyForecastRepository;
 import com.example.weatherapp.forecast.daily.DailyForecast;
 import com.example.weatherapp.forecast.daily.DailyForecastDto;
 import com.example.weatherapp.forecast.hourly.HourlyForecast;
 import com.example.weatherapp.forecast.hourly.HourlyForecastDto;
 import com.example.weatherapp.forecast.hourly.HourlyForecastRepository;
+import com.example.weatherapp.webclient.Exclude;
 import com.example.weatherapp.webclient.WeatherClient;
 import com.example.weatherapp.webclient.WeatherResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -25,11 +27,11 @@ import java.util.stream.Collectors;
 public class CityService {
     private final CityRepository cityRepository;
     private final HourlyForecastRepository hourlyForecastRepository;
-    private final DailyForceastRepository dailyForceastRepository;
+    private final DailyForecastRepository dailyForceastRepository;
     private final ObjectMapper objectMapper;
     private final WeatherClient weatherClient;
 
-    public CityService(CityRepository cityRepository, HourlyForecastRepository hourlyForecastRepository, DailyForceastRepository dailyForceastRepository, ObjectMapper objectMapper, WeatherClient weatherClient) {
+    public CityService(CityRepository cityRepository, HourlyForecastRepository hourlyForecastRepository, DailyForecastRepository dailyForceastRepository, ObjectMapper objectMapper, WeatherClient weatherClient) {
         this.cityRepository = cityRepository;
         this.hourlyForecastRepository = hourlyForecastRepository;
         this.dailyForceastRepository = dailyForceastRepository;
@@ -37,13 +39,21 @@ public class CityService {
         this.weatherClient = weatherClient;
     }
 
+//     ----------------------------------- City CRUD ----------------------------------------------
+
     public List<City> getCities() {
         return cityRepository.findAll();
     }
 
     public List<CityDto> getCityDtos() {
-        return cityRepository.findAll().stream()
-                .map(city -> new CityDto(city.getId(), city.getName(), city.getLatitude(), city.getLongitude(), null, null))
+        return getCities().stream()
+                .map(city -> new CityDto(
+                        city.getId(),
+                        city.getName(),
+                        city.getLatitude(),
+                        city.getLongitude(),
+                        city.getHourlyForecasts(),
+                        city.getDailyForecasts()))
                 .collect(Collectors.toList());
     }
 
@@ -53,7 +63,13 @@ public class CityService {
 
     public CityDto getCityDtoById(Long id) {
         City city = getCityById(id);
-        return new CityDto(city.getId(), city.getName(), city.getLatitude(), city.getLongitude(), city.getHourlyForecasts(), city.getDailyForecasts());
+        return new CityDto(
+                city.getId(),
+                city.getName(),
+                city.getLatitude(),
+                city.getLongitude(),
+                city.getHourlyForecasts(),
+                city.getDailyForecasts());
     }
 
     private City getCityByCoordinates(CityDto cityDto) {
@@ -65,7 +81,7 @@ public class CityService {
         City city = getCityById(id);
         setCityDetailsFromCityDto(city, cityDto);
         cityRepository.save(city);
-        updateForecasts(cityDto);
+        updateForecastsById(id);
     }
 
     private void setCityDetailsFromCityDto(City city, CityDto cityDto) {
@@ -80,37 +96,38 @@ public class CityService {
         }
     }
 
-    //    --------------------------------- API ------------------------------------
+//     --------------------------------- OpenWeather ------------------------------------
 
     public WeatherResponse getWeatherResponse(CityDto cityDto, String exclude) {
         return weatherClient.getWeatherResponse(cityDto, exclude);
     }
 
     @Transactional
-    public void getHourlyForecastsFromAPI(CityDto cityDto) {
-        WeatherResponse weatherResponse = getWeatherResponse(cityDto, "daily");
+    public void updateHourlyForecasts(CityDto cityDto) {
+        WeatherResponse weatherResponse = getWeatherResponse(cityDto, Exclude.DAILY.toString().toLowerCase(Locale.ROOT));
         City city = getCityByCoordinates(cityDto);
         List<HourlyForecast> hourlyForecasts = weatherResponse.getHourlyForecasts()
                 .stream()
                 .map(forecastDto -> {
                     HourlyForecast hourlyForecast = new HourlyForecast();
                     setHourlyForecastParameters(hourlyForecast, forecastDto);
-                    hourlyForecast.setCity(city);
+                    hourlyForecast.setCityId(city.getId());
                     return hourlyForecast;
                 }).toList();
+
         hourlyForecastRepository.saveAll(hourlyForecasts);
     }
 
     @Transactional
-    public void getDailyForecastsFromAPI(CityDto cityDto) {
-        WeatherResponse weatherResponse = getWeatherResponse(cityDto, "hourly");
+    public void updateDailyForecasts(CityDto cityDto) {
+        WeatherResponse weatherResponse = getWeatherResponse(cityDto, Exclude.HOURLY.toString().toLowerCase(Locale.ROOT));
         City city = getCityByCoordinates(cityDto);
         List<DailyForecast> dailyForecasts = weatherResponse.getDailyForecasts()
                 .stream()
                 .map(forecastDto -> {
                     DailyForecast dailyForecast = new DailyForecast();
                     setDailyForecastParameters(dailyForecast, forecastDto);
-                    dailyForecast.setCity(city);
+                    dailyForecast.setCityId(city.getId());
                     return dailyForecast;
                 }).toList();
         dailyForceastRepository.saveAll(dailyForecasts);
@@ -118,24 +135,21 @@ public class CityService {
 
     @Transactional
     public void updateForecastsById(Long id) {
-        getHourlyForecastsFromAPI(getCityDtoById(id));
-        getDailyForecastsFromAPI(getCityDtoById(id));
+        updateHourlyForecasts(getCityDtoById(id));
+        updateDailyForecasts(getCityDtoById(id));
     }
 
     @Transactional
-    public void updateForecasts(CityDto cityDto) {
-        getHourlyForecastsFromAPI(cityDto);
-        getDailyForecastsFromAPI(cityDto);
-    }
-
     public void updateAllForecasts() {
-        getCityDtos().forEach(this::getHourlyForecastsFromAPI);
-        getCityDtos().forEach(this::getDailyForecastsFromAPI);
+        getCityDtos().forEach(this::updateHourlyForecasts);
+        getCityDtos().forEach(this::updateDailyForecasts);
 
     }
 
     private void setDailyForecastParameters(DailyForecast forecast, DailyForecastDto dailyForecastDto) {
-        forecast.setDateTime(LocalDateTime.ofInstant(objectMapper.convertValue(dailyForecastDto.dateTime(), Instant.class), ZoneId.systemDefault()));
+        forecast.setDateTime(LocalDateTime.ofInstant(
+                objectMapper.convertValue(dailyForecastDto.dateTime(), Instant.class),
+                ZoneId.systemDefault()));
         forecast.setTemperatures(dailyForecastDto.temperatures().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey, e -> e.getValue() - 273.15
@@ -146,16 +160,18 @@ public class CityService {
     }
 
     private void setHourlyForecastParameters(HourlyForecast forecast, HourlyForecastDto hourlyForecastDto) {
-        forecast.setDateTime(LocalDateTime.ofInstant(objectMapper.convertValue(hourlyForecastDto.dateTime(), Instant.class), ZoneId.systemDefault()));
+        forecast.setDateTime(LocalDateTime.ofInstant(
+                objectMapper.convertValue(hourlyForecastDto.dateTime(), Instant.class),
+                ZoneId.systemDefault()));
         forecast.setTemperature(hourlyForecastDto.temp() - 273.15);
         forecast.setPressure(hourlyForecastDto.pressure());
         forecast.setHumidity(hourlyForecastDto.humidity());
         forecast.setWindSpeed(hourlyForecastDto.windSpeed());
     }
 
-    //    --------------------------------- FORECAST -------------------------------------
+//     --------------------------------- Forecast CRUD -------------------------------------
 
-    public List<HourlyForecastDto> getHourlyForecastsDtoById(Long id) {
+    public List<HourlyForecastDto> getHourlyForecastDtosById(Long id) {
         List<HourlyForecastDto> dtos = new ArrayList<>();
         for (HourlyForecast hourlyForecast : getCityById(id).getHourlyForecasts()) {
             HourlyForecastDto dto = new HourlyForecastDto(
@@ -170,7 +186,7 @@ public class CityService {
         return dtos;
     }
 
-    public List<DailyForecastDto> getDailyForecastsDtoById(Long id) {
+    public List<DailyForecastDto> getDailyForecastDtosById(Long id) {
         List<DailyForecastDto> dtos = new ArrayList<>();
         for (DailyForecast dailyForecast : getCityById(id).getDailyForecasts()) {
             DailyForecastDto dto = new DailyForecastDto(
@@ -183,5 +199,11 @@ public class CityService {
             dtos.add(dto);
         }
         return dtos;
+    }
+
+//    --------------------------------- Other -------------------------------------
+
+    public boolean dbExists() {
+        return !getCities().isEmpty();
     }
 }
