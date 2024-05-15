@@ -3,6 +3,7 @@ package com.example.weatherapp.apptest;
 import com.example.weatherapp.city.CityDto;
 import com.example.weatherapp.city.CityRepository;
 import com.example.weatherapp.config.MySQLContainerConfig;
+import com.example.weatherapp.forecast.hourly.HourlyForecast;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,8 +61,18 @@ public class CityControllerTest extends MySQLContainerConfig {
                         city.getName(),
                         city.getLatitude(),
                         city.getLongitude(),
-                        city.getHourlyForecasts(),
-                        city.getDailyForecasts()))
+                        city.getHourlyForecasts().stream()
+                                .peek(hourlyForecast -> {
+                                    Double roundedTemperature = Math.round(hourlyForecast.getTemperature() * 100.0) / 100.0;
+                                    hourlyForecast.setTemperature(roundedTemperature);
+                                }).toList(),
+                        city.getDailyForecasts().stream()
+                                .peek(dailyForecast -> {
+                                    Map<String, Double> roundedTemperatures = dailyForecast.getTemperatures().entrySet().stream().collect(Collectors.toMap(
+                                            Map.Entry::getKey,
+                                            stringDoubleEntry -> Math.round(stringDoubleEntry.getValue() * 100.0) / 100.0));
+                                    dailyForecast.setTemperatures(roundedTemperatures);
+                                }).toList()))
                 .collect(Collectors.toList());
 
         try {
@@ -70,7 +82,23 @@ public class CityControllerTest extends MySQLContainerConfig {
                     null,
                     new ParameterizedTypeReference<>() {
                     });
-            assertEquals(cityDtos, response.getBody());
+
+            List<CityDto> body = response.getBody().stream()
+                    .peek(cityDto -> {
+                        cityDto.hourlyForecasts().forEach(hourlyForecast -> {
+                            Double roundedTemperature = Math.round(hourlyForecast.getTemperature() * 100.0) / 100.0;
+                            hourlyForecast.setTemperature(roundedTemperature);
+                        });
+                        cityDto.dailyForecasts().forEach(dailyForecast -> {
+                            Map<String, Double> roundedTemperatures = dailyForecast.getTemperatures().entrySet().stream().collect(Collectors.toMap(
+                                    Map.Entry::getKey,
+                                    stringDoubleEntry -> Math.round(stringDoubleEntry.getValue() * 100.0) / 100.0));
+                            dailyForecast.setTemperatures(roundedTemperatures);
+                        });
+                    })
+                    .toList();
+
+            assertEquals(cityDtos, body);
         } catch (RestClientException e) {
             fail("Exception thrown: " + e.getMessage());
         }

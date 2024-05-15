@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -152,7 +153,7 @@ public class CityService {
                 ZoneId.systemDefault()));
         forecast.setTemperatures(dailyForecastDto.temperatures().entrySet().stream()
                 .collect(Collectors.toMap(
-                        Map.Entry::getKey, e -> e.getValue() - 273.15
+                        s -> s.getKey(), e -> (e.getValue().subtract(BigDecimal.valueOf(273.15))).doubleValue()
                 )));
         forecast.setPressure(dailyForecastDto.pressure());
         forecast.setHumidity(dailyForecastDto.humidity());
@@ -190,7 +191,8 @@ public class CityService {
         List<DailyForecastDto> dtos = new ArrayList<>();
         for (DailyForecast dailyForecast : getCityById(id).getDailyForecasts()) {
             DailyForecastDto dto = new DailyForecastDto(
-                    dailyForecast.getTemperatures(),
+                    dailyForecast.getTemperatures().entrySet().stream()
+                            .collect(Collectors.toMap(Map.Entry::getKey, stringDoubleEntry -> BigDecimal.valueOf(stringDoubleEntry.getValue()))),
                     dailyForecast.getPressure(),
                     dailyForecast.getHumidity(),
                     dailyForecast.getWindSpeed(),
