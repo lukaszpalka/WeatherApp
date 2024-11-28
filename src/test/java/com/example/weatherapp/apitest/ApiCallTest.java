@@ -20,7 +20,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,13 +37,13 @@ public class ApiCallTest extends MySQLContainerConfig {
 
     private final TestRestTemplate restTemplate = new TestRestTemplate();
 
-    private final String apiKeyOpenweather;
+    private final String apiKeyOpenWeather;
     private final String apiUrl;
     private final CityRepository cityRepository;
 
     @Autowired
-    public ApiCallTest(@Value("${external.api.key}") String apiKeyOpenweather, @Value("${api.url}") String apiUrl, CityRepository cityRepository) {
-        this.apiKeyOpenweather = apiKeyOpenweather;
+    public ApiCallTest(@Value("${external.api.key}") String apiKeyOpenWeather, @Value("${api.url}") String apiUrl, CityRepository cityRepository) {
+        this.apiKeyOpenWeather = apiKeyOpenWeather;
         this.apiUrl = apiUrl;
         this.cityRepository = cityRepository;
     }
@@ -56,7 +58,7 @@ public class ApiCallTest extends MySQLContainerConfig {
                 .withQueryParam("lat", equalTo(city.getLatitude().toString()))
                 .withQueryParam("lon", equalTo(city.getLongitude().toString()))
                 .withQueryParam("exclude", equalTo("current,minutely," + Exclude.HOURLY))
-                .withQueryParam("appid", equalTo(apiKeyOpenweather))
+                .withQueryParam("appid", equalTo(apiKeyOpenWeather))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -78,7 +80,7 @@ public class ApiCallTest extends MySQLContainerConfig {
                 .withQueryParam("lat", equalTo(city.getLatitude().toString()))
                 .withQueryParam("lon", equalTo(city.getLongitude().toString()))
                 .withQueryParam("exclude", equalTo("current,minutely," + Exclude.DAILY))
-                .withQueryParam("appid", equalTo(apiKeyOpenweather))
+                .withQueryParam("appid", equalTo(apiKeyOpenWeather))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -97,7 +99,8 @@ public class ApiCallTest extends MySQLContainerConfig {
         City city = cityRepository.findById(id).get();
         List<DailyForecastDto> dailyForecastDtos = city.getDailyForecasts().stream()
                 .map(dailyForecast -> new DailyForecastDto(
-                        dailyForecast.getTemperatures(),
+                        dailyForecast.getTemperatures().entrySet().stream()
+                                .collect(Collectors.toMap(s -> s.getKey(), e -> BigDecimal.valueOf(e.getValue()))),
                         dailyForecast.getPressure(),
                         dailyForecast.getHumidity(),
                         dailyForecast.getWindSpeed(),

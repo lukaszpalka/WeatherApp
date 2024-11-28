@@ -12,9 +12,9 @@ public class WeatherClient {
     private final WebClient webClient;
     private final String API_KEY_OPENWEATHER;
 
-    public WeatherClient(WebClient.Builder webClientBuilder, @Value("${external.api.key}") String apiKeyOpenweather, @Value("${api.url}") String apiUrl) {
+    public WeatherClient(WebClient.Builder webClientBuilder, @Value("${external.api.key}") String apiKeyOpenWeather, @Value("${api.url}") String apiUrl) {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
-        API_KEY_OPENWEATHER = apiKeyOpenweather;
+        API_KEY_OPENWEATHER = apiKeyOpenWeather;
     }
 
     public WeatherResponse getWeatherResponse(CityDto cityDto, String exclude) {
